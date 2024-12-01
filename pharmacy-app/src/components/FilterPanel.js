@@ -1,9 +1,9 @@
 import React from 'react';
-import { Button, Box } from '@mui/material';
+import { Button, Stack } from '@mui/material';
 
 function FilterPanel({ categories, onFilter }) {
     return (
-        <Box style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <Stack direction="row" spacing={2} style={{ marginBottom: '20px' }}>
             {categories.map((category) => (
                 <Button
                     key={category}
@@ -13,7 +13,7 @@ function FilterPanel({ categories, onFilter }) {
                     {category}
                 </Button>
             ))}
-        </Box>
+        </Stack>
     );
 }
 

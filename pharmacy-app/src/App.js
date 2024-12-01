@@ -1,75 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import ProductCard from './components/ProductCard';
-import FilterPanel from './components/FilterPanel';
-import { Button } from '@mui/material';
-import { AppBar, Toolbar, Typography, Container, Grid } from '@mui/material';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
+import HomePage from './components/HomePage'; // Импорт главной страницы
+import LoginPage from './components/LoginPage'; // Импорт страницы логина
+import ProfilePage from './components/ProfilePage'; // Импорт личного кабинета
+import './App.css';
 import axios from 'axios';
+axios.defaults.withCredentials = true; // Включить отправку куков
+axios.defaults.baseURL = 'http://localhost:5000'; // Базовый URL бэкенда
+
+
+
 
 function App() {
-  const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+    const [loggedIn, setLoggedIn] = useState(false);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    // Загружаем продукты и категории
-    axios.get('http://127.0.0.1:5000/products').then((response) => {
-      setProducts(response.data);
-      setFilteredProducts(response.data);
+    // Проверяем, залогинен ли пользователь (localStorage)
+    useEffect(() => {
+        const isLoggedIn = localStorage.getItem('loggedIn');
+        if (isLoggedIn === 'true') {
+            setLoggedIn(true);
+        }
+    }, []);
 
-      // Генерация категорий из данных (пример: "Pain Relief", "Vitamins")
-      const uniqueCategories = [
-        ...new Set(response.data.map((product) => product.category || 'Other')),
-      ];
-      setCategories(uniqueCategories);
-    });
-  }, []);
+    const handleLogout = () => {
+        setLoggedIn(false);
+        localStorage.setItem('loggedIn', 'false');
+        navigate('/'); // Перенаправление на главную
+    };
 
-  const handleFilter = (category) => {
-    if (category === 'All') {
-      setFilteredProducts(products);
-    } else {
-      setFilteredProducts(
-          products.filter((product) => product.category === category)
-      );
-    }
-  };
+    const handleLogin = () => {
+        setLoggedIn(true);
+        localStorage.setItem('loggedIn', 'true');
+    };
 
-  return (
-      <div>
-        {/* Верхняя панель */}
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" style={{ flexGrow: 1 }}>
-              Pharmacy App
-            </Typography>
-            <Button color="inherit">Личный кабинет</Button>
-          </Toolbar>
-        </AppBar>
+    return (
+        <>
+            {/* Верхняя панель */}
+            <AppBar position="static">
+                <Toolbar>
+                    {/* Кнопка с логотипом для перехода на главную */}
+                    <Typography
+                        variant="h6"
+                        style={{ flexGrow: 1, cursor: 'pointer' }}
+                        onClick={() => navigate('/')}
+                    >
+                        Pharmacy App
+                    </Typography>
+                    {/* Навигация */}
+                    {loggedIn ? (
+                        <>
+                            <Button color="inherit" component={Link} to="/profile">
+                                Личный кабинет
+                            </Button>
+                            <Button color="inherit" onClick={handleLogout}>
+                                Выйти
+                            </Button>
+                        </>
+                    ) : (
+                        <Button color="inherit" component={Link} to="/login">
+                            Войти
+                        </Button>
+                    )}
+                </Toolbar>
+            </AppBar>
 
-        {/* Основной контент */}
-        <Container style={{ marginTop: '20px' }}>
-          {/* Фильтры */}
-          <FilterPanel
-              categories={['All', ...categories]}
-              onFilter={handleFilter}
-          />
-
-          {/* Карточки товаров */}
-          <Grid container spacing={2}>
-            {filteredProducts.map((product) => (
-                <Grid item xs={12} sm={6} md={4} key={product.id}>
-                  <ProductCard
-                      name={product.name}
-                      description={product.description}
-                      price={product.price}
-                      image={product.image}
-                  />
-                </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </div>
-  );
+            {/* Роуты */}
+            <Container style={{ marginTop: '20px' }}>
+                <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/login" element={<LoginPage setLoggedIn={handleLogin} />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                </Routes>
+            </Container>
+        </>
+    );
 }
 
 export default App;
