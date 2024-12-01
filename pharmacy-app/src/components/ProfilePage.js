@@ -69,10 +69,11 @@ function ProfilePage() {
                     variant="outlined"
                     multiline
                     rows={4}
-                    value={newDescription}
+                    value={newDescription || ""} // Если newDescription равен null, используется пустая строка
                     onChange={(e) => setNewDescription(e.target.value)}
                     style={{ width: '400px' }}
                 />
+
             </div>
             <Button variant="contained" color="primary" onClick={handleSave}>
                 Сохранить

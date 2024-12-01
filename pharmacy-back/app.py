@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import sqlite3
-
+import logging
 app = Flask(__name__)
 # Настройка CORS
 CORS(app, supports_credentials=True, origins="http://localhost:3000")
 
+logging.basicConfig(level=logging.INFO)  # Устанавливаем уровень логирования
+logger = logging.getLogger(__name__)  # Логгер для текущего приложения
 
 DATABASE = 'pharmacy.db'
 
@@ -56,36 +58,41 @@ def get_products():
         for p in products
     ])
 
+
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    session = request.cookies.get('session')
+    session = request.cookies.get('user')  # Ищем куку с правильным названием
     if not session:
+        logger.warning("No user cookie found!")
         return jsonify({"message": "Unauthorized"}), 401
 
-    # Извлекаем имя пользователя из куки
-    username = session.split('=')[1]
-    print(username)
+    # Если в куке лежит сразу username (например, admin)
+    username = session
+    logger.info(f"Extracted username from cookie: {username}")
+
     if request.method == 'GET':
-        # Уязвимый SQL-запрос для получения профиля
         query = f"SELECT username, description FROM users WHERE username = '{username}'"
+        logger.info(f"Executing query: {query}")
         user = query_db(query, one=True)
-        print(query)
         if user:
             return jsonify({"username": user[0], "description": user[1]})
         else:
+            logger.warning(f"User not found: {username}")
             return jsonify({"message": "User not found"}), 404
 
     elif request.method == 'POST':
-        # Уязвимый SQL-запрос для обновления описания
         new_description = request.json.get('description', '')
         query = f"UPDATE users SET description = '{new_description}' WHERE username = '{username}'"
+        logger.info(f"Executing query: {query}")
         try:
-            conn = sqlite3.connect('pharmacy.db')  # Подключение к базе данных
+            conn = sqlite3.connect('pharmacy.db')
             cursor = conn.cursor()
-            cursor.execute(query)  # Выполнение уязвимого запроса
+            cursor.execute(query)
             conn.commit()
+            logger.info(f"Description updated for user: {username}")
             return jsonify({"message": "Profile updated successfully"})
         except sqlite3.Error as e:
+            logger.error(f"Database error: {e}")
             return jsonify({"message": f"Database error: {e}"}), 500
         finally:
             conn.close()
