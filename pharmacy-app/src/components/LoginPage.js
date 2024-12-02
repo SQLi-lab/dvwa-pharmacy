@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, TextField, Button } from '@mui/material';
+import { Container, TextField, Button, Alert } from '@mui/material';
 import axios from 'axios';
+
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = 'http://localhost:5000'; // Базовый URL бэкенда
-
 
 function LoginPage({ setLoggedIn }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState(null); // Для отображения ошибок
     const navigate = useNavigate();
 
     const handleLogin = async () => {
         try {
-            const response = await axios.post('http://127.0.0.1:5000/login', {
+            setError(null); // Сбрасываем ошибку перед новой попыткой входа
+            const response = await axios.post('/login', {
                 username,
                 password,
-            }, {
-                withCredentials: true, // Для работы с куками
             });
 
             console.log(response.data.message); // Успешный вход
@@ -28,19 +28,23 @@ function LoginPage({ setLoggedIn }) {
             if (error.response) {
                 // Если сервер вернул ответ с ошибкой
                 console.error('Ошибка:', error.response.data.message);
-                alert(error.response.data.message);
+                setError(error.response.data.message);
             } else {
                 // Если произошла сетевая ошибка или что-то другое
                 console.error('Сетевая ошибка или другая проблема:', error.message);
-                alert('Произошла ошибка. Попробуйте позже.');
+                setError('Произошла ошибка. Попробуйте позже.');
             }
         }
     };
 
-
     return (
         <Container style={{ marginTop: '50px', textAlign: 'center' }}>
             <h1>Вход</h1>
+            {error && (
+                <Alert severity="error" style={{ marginBottom: '20px' }}>
+                    {error}
+                </Alert>
+            )}
             <TextField
                 label="Имя пользователя"
                 variant="outlined"
@@ -58,7 +62,12 @@ function LoginPage({ setLoggedIn }) {
                 style={{ marginBottom: '20px', width: '300px' }}
             />
             <br />
-            <Button variant="contained" color="primary" onClick={handleLogin}>
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={handleLogin}
+                disabled={!username || !password} // Блокируем кнопку, если поля пустые
+            >
                 Войти
             </Button>
         </Container>
