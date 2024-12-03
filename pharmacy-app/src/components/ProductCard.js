@@ -1,13 +1,13 @@
 import React from 'react';
-import { Card, CardContent, Typography, CardMedia } from '@mui/material';
+import { Card, CardContent, Typography, CardMedia, Button } from '@mui/material';
 
-function ProductCard({ name, description, price, image }) {
+function ProductCard({ name, description, price, image, onAddToCart }) {
     return (
         <Card style={{ maxWidth: 300, margin: '10px' }}>
             <CardMedia
                 component="img"
                 height="140"
-                image={image || 'https://via.placeholder.com/300'} // Заглушка для изображений
+                image={image || 'https://via.placeholder.com/300'}
                 alt={name}
             />
             <CardContent>
@@ -18,8 +18,16 @@ function ProductCard({ name, description, price, image }) {
                     {description}
                 </Typography>
                 <Typography variant="h6" color="text.primary">
-                    ${price.toFixed(2)}
+                    {price} руб.
                 </Typography>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={onAddToCart}
+                    style={{ marginTop: '10px' }}
+                >
+                    Добавить в корзину
+                </Button>
             </CardContent>
         </Card>
     );

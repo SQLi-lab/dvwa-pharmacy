@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Container, TextField, Button, Typography, Paper } from '@mui/material';
+import {
+    Container,
+    TextField,
+    Button,
+    Typography,
+    Paper,
+    List,
+    ListItem,
+    ListItemText,
+    Snackbar,
+    Pagination,
+} from '@mui/material';
 
 // Функция для извлечения куки по имени
 function getCookieByName(name) {
     const cookies = document.cookie.split(';');
-    console.log(cookies)
     for (let cookie of cookies) {
         cookie = cookie.trim();
         if (cookie.startsWith(`${name}=`)) {
@@ -26,13 +36,20 @@ function ProfilePage() {
     });
     const [isEditing, setIsEditing] = useState(false);
     const [newDescription, setNewDescription] = useState('');
+    const [orders, setOrders] = useState([]); // Список заказов
+    const [reviews, setReviews] = useState([]); // Список отзывов
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
+    // Загружаем профиль пользователя, заказы и отзывы
     useEffect(() => {
         fetch('http://127.0.0.1:5000/profile', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization':  getCookieByName('user'),
+                'Authorization': 'Bearer ' + getCookieByName('user'),
             },
         })
             .then((response) => response.json())
@@ -40,25 +57,36 @@ function ProfilePage() {
                 setUserData({
                     username: data.username,
                     name: data.name,
-                    passport: data.passport_number,
-                    birthDate: data.birth_date,
-                    address: data.address,
-                    phone: data.phone_number,
-                    description: data.description,
+                    passport: data.passport_number || '',
+                    birthDate: data.birth_date || '',
+                    address: data.address || '',
+                    phone: data.phone_number || '',
+                    description: data.description || '',
                 });
-                setNewDescription(data.description);
+                setNewDescription(data.description || '');
+                setOrders(data.orders || []); // Убедимся, что заказы отображаются
+                setReviews(data.reviews || []);
             })
             .catch((error) => {
                 console.error('Ошибка получения профиля:', error);
             });
     }, []);
 
+    const showMessage = (message) => {
+        setSnackbarMessage(message);
+        setSnackbarOpen(true);
+    };
+
+    const handleSnackbarClose = () => {
+        setSnackbarOpen(false);
+    };
+
     const handleEdit = () => {
         setIsEditing(true);
     };
 
     const handleSave = () => {
-        const userCookie = getCookieByName('user'); // Получаем куку с именем `user`
+        const userCookie = getCookieByName('user');
 
         if (!userCookie) {
             console.error('Кука с именем "user" не найдена!');
@@ -69,7 +97,7 @@ function ProfilePage() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Cookie ${userCookie}`, // Передаём куку в заголовке Authorization
+                'Authorization': 'Bearer ' + userCookie,
             },
             body: JSON.stringify({ description: newDescription }),
         })
@@ -77,11 +105,20 @@ function ProfilePage() {
             .then(() => {
                 setUserData((prevData) => ({ ...prevData, description: newDescription }));
                 setIsEditing(false);
-                //alert('Описание обновлено!');
+                showMessage('Описание успешно обновлено!');
             })
             .catch((error) => {
                 console.error('Ошибка сохранения описания:', error);
             });
+    };
+
+    const paginatedOrders = orders.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePageChange = (event, value) => {
+        setCurrentPage(value);
     };
 
     return (
@@ -104,6 +141,7 @@ function ProfilePage() {
                         <Typography>Телефон: {userData.phone}</Typography>
                     </div>
                 </div>
+
                 <div style={{ marginTop: '20px' }}>
                     <Typography variant="h6" style={{ marginBottom: '10px' }}>
                         Описание:
@@ -149,7 +187,53 @@ function ProfilePage() {
                         </div>
                     )}
                 </div>
+
+                <div style={{ marginTop: '20px' }}>
+                    <Typography variant="h6" style={{ marginBottom: '10px' }}>
+                        Ваши заказы:
+                    </Typography>
+                    {paginatedOrders.length === 0 ? (
+                        <Typography>У вас нет заказов</Typography>
+                    ) : (
+                        <List>
+                            {paginatedOrders.map((order, index) => (
+                                <ListItem key={index}>
+                                    <ListItemText primary={`${order.name} - ${order.price} руб.`} />
+                                </ListItem>
+                            ))}
+                        </List>
+                    )}
+                    <Pagination
+                        count={Math.ceil(orders.length / itemsPerPage)}
+                        page={currentPage}
+                        onChange={handlePageChange}
+                        style={{ marginTop: '10px' }}
+                    />
+                </div>
+
+                <div style={{ marginTop: '20px' }}>
+                    <Typography variant="h6" style={{ marginBottom: '10px' }}>
+                        Отзывы:
+                    </Typography>
+                    {reviews.length === 0 ? (
+                        <Typography>Отзывов пока нет</Typography>
+                    ) : (
+                        <List>
+                            {reviews.map((review, index) => (
+                                <ListItem key={index}>
+                                    <ListItemText primary={review.text} />
+                                </ListItem>
+                            ))}
+                        </List>
+                    )}
+                </div>
             </Paper>
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={3000}
+                onClose={handleSnackbarClose}
+                message={snackbarMessage}
+            />
         </Container>
     );
 }
