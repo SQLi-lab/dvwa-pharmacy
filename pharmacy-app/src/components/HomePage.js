@@ -47,6 +47,7 @@ function HomePage({ addToCart }) {
                 {filteredProducts.map((product) => (
                     <Grid item xs={12} sm={6} md={4} key={product.id}>
                         <ProductCard
+                            id={product.id}
                             name={product.name}
                             description={product.description}
                             price={product.price}

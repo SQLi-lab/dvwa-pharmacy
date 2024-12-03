@@ -65,6 +65,22 @@ def get_products():
         for p in products
     ])
 
+@app.route('/products/<int:product_id>', methods=['GET'])
+def get_product(product_id):
+    query = "SELECT * FROM products WHERE id = ?"
+    product = query_db(query, (product_id,), one=True)
+    if product:
+        return jsonify({
+            "id": product[0],
+            "name": product[1],
+            "description": product[2],
+            "price": product[3],
+            "category": product[4]
+        })
+    else:
+        return jsonify({"message": "Product not found"}), 404
+
+
 @app.route('/orders', methods=['POST'])
 def orders():
     auth_header = request.headers.get('Authorization')

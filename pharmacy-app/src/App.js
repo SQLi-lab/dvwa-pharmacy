@@ -5,6 +5,7 @@ import HomePage from './components/HomePage'; // Главная страница
 import LoginPage from './components/LoginPage'; // Страница логина
 import ProfilePage from './components/ProfilePage'; // Личный кабинет
 import Cart from './components/Cart'; // Корзина
+import ProductDetail from './components/ProductDetail'; // Детальная страница товара
 
 import './App.css';
 import axios from 'axios';
@@ -12,6 +13,7 @@ import axios from 'axios';
 axios.defaults.withCredentials = true; // Включить отправку куков
 axios.defaults.baseURL = 'http://localhost:5000'; // Базовый URL бэкенда
 
+// Функция для извлечения куки по имени
 function getCookieByName(name) {
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
@@ -23,9 +25,8 @@ function getCookieByName(name) {
     return null;
 }
 
-
 function App() {
-    const [loggedIn, setLoggedIn] = useState(false);
+    const [loggedIn, setLoggedIn] = useState(false); // Статус авторизации
     const [cart, setCart] = useState([]); // Корзина
     const [orders, setOrders] = useState([]); // Заказы
     const navigate = useNavigate();
@@ -53,10 +54,12 @@ function App() {
         localStorage.setItem('loggedIn', 'true');
     };
 
+    // Добавление товара в корзину
     const addToCart = (product) => {
-        setCart([...cart, product]);
+        setCart((prevCart) => [...prevCart, product]);
     };
 
+    // Оформление заказа
     const placeOrder = () => {
         const userCookie = getCookieByName('user');
 
@@ -75,14 +78,6 @@ function App() {
             price: item.price,
         }));
 
-        // Проверяем, что у всех товаров есть имя и цена
-        for (const order of ordersToPlace) {
-            if (!order.name || !order.price) {
-                alert('Некорректные данные товара.');
-                return;
-            }
-        }
-
         fetch('http://127.0.0.1:5000/orders', {
             method: 'POST',
             headers: {
@@ -98,8 +93,8 @@ function App() {
                 return response.json();
             })
             .then(() => {
-                setOrders([...orders, ...cart]);
-                setCart([]);
+                setOrders((prevOrders) => [...prevOrders, ...cart]); // Добавляем оформленные заказы
+                setCart([]); // Очищаем корзину
                 alert('Заказы успешно оформлены!');
             })
             .catch((error) => {
@@ -108,10 +103,9 @@ function App() {
             });
     };
 
-
-
     return (
         <>
+            {/* Верхняя панель */}
             <AppBar position="static">
                 <Toolbar>
                     <Typography
@@ -140,6 +134,8 @@ function App() {
                     )}
                 </Toolbar>
             </AppBar>
+
+            {/* Роуты */}
             <Container style={{ marginTop: '20px' }}>
                 <Routes>
                     <Route path="/" element={<HomePage addToCart={addToCart} />} />
@@ -152,6 +148,10 @@ function App() {
                         path="/cart"
                         element={<Cart cart={cart} placeOrder={placeOrder} />}
                     />
+                    <Route
+                        path="/products/:id"
+                        element={<ProductDetail addToCart={addToCart} />}
+                    /> {/* Детальная страница товара */}
                 </Routes>
             </Container>
         </>
