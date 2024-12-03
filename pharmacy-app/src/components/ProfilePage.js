@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Container, TextField, Button, Typography, Paper } from '@mui/material';
-import axios from 'axios';
+
+// Функция для извлечения куки по имени
+function getCookieByName(name) {
+    const cookies = document.cookie.split(';');
+    console.log(cookies)
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(`${name}=`)) {
+            return cookie.substring(name.length + 1);
+        }
+    }
+    return null;
+}
 
 function ProfilePage() {
     const [userData, setUserData] = useState({
+        username: '',
         name: '',
         passport: '',
         birthDate: '',
@@ -15,19 +28,25 @@ function ProfilePage() {
     const [newDescription, setNewDescription] = useState('');
 
     useEffect(() => {
-        // Загружаем данные профиля
-        axios
-            .get('http://127.0.0.1:5000/profile', { withCredentials: true })
-            .then((response) => {
+        fetch('http://127.0.0.1:5000/profile', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization':  getCookieByName('user'),
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
                 setUserData({
-                    name: response.data.name,
-                    passport: response.data.passport_number,
-                    birthDate: response.data.birth_date,
-                    address: response.data.address,
-                    phone: response.data.phone_number,
-                    description: response.data.description,
+                    username: data.username,
+                    name: data.name,
+                    passport: data.passport_number,
+                    birthDate: data.birth_date,
+                    address: data.address,
+                    phone: data.phone_number,
+                    description: data.description,
                 });
-                setNewDescription(response.data.description);
+                setNewDescription(data.description);
             })
             .catch((error) => {
                 console.error('Ошибка получения профиля:', error);
@@ -39,16 +58,26 @@ function ProfilePage() {
     };
 
     const handleSave = () => {
-        axios
-            .post(
-                'http://127.0.0.1:5000/profile',
-                { description: newDescription },
-                { withCredentials: true }
-            )
+        const userCookie = getCookieByName('user'); // Получаем куку с именем `user`
+
+        if (!userCookie) {
+            console.error('Кука с именем "user" не найдена!');
+            return;
+        }
+
+        fetch('http://127.0.0.1:5000/profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Cookie ${userCookie}`, // Передаём куку в заголовке Authorization
+            },
+            body: JSON.stringify({ description: newDescription }),
+        })
+            .then((response) => response.json())
             .then(() => {
                 setUserData((prevData) => ({ ...prevData, description: newDescription }));
                 setIsEditing(false);
-                alert('Описание обновлено!');
+                //alert('Описание обновлено!');
             })
             .catch((error) => {
                 console.error('Ошибка сохранения описания:', error);
@@ -58,6 +87,9 @@ function ProfilePage() {
     return (
         <Container style={{ marginTop: '20px', fontFamily: 'Arial, sans-serif' }}>
             <Paper elevation={3} style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+                <Typography variant="h5" style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    {userData.username}
+                </Typography>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
                     <img
                         src="https://via.placeholder.com/150"
@@ -65,7 +97,7 @@ function ProfilePage() {
                         style={{ borderRadius: '50%', marginRight: '20px', width: '150px', height: '150px' }}
                     />
                     <div>
-                        <Typography variant="h5">{userData.name}</Typography>
+                        <Typography variant="h6">{userData.name}</Typography>
                         <Typography>Паспорт: {userData.passport}</Typography>
                         <Typography>Дата рождения: {userData.birthDate}</Typography>
                         <Typography>Адрес: {userData.address}</Typography>

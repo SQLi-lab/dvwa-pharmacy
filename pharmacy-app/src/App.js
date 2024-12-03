@@ -6,11 +6,9 @@ import LoginPage from './components/LoginPage'; // Импорт страницы
 import ProfilePage from './components/ProfilePage'; // Импорт личного кабинета
 import './App.css';
 import axios from 'axios';
+
 axios.defaults.withCredentials = true; // Включить отправку куков
 axios.defaults.baseURL = 'http://localhost:5000'; // Базовый URL бэкенда
-
-
-
 
 function App() {
     const [loggedIn, setLoggedIn] = useState(false);
@@ -24,10 +22,17 @@ function App() {
         }
     }, []);
 
-    const handleLogout = () => {
-        setLoggedIn(false);
-        localStorage.setItem('loggedIn', 'false');
-        navigate('/'); // Перенаправление на главную
+    const handleLogout = async () => {
+        try {
+            const response = await axios.post('/logout', {});
+            //alert(response.data.message); // Сообщение об успешном выходе
+            setLoggedIn(false); // Сбрасываем состояние
+            localStorage.setItem('loggedIn', 'false'); // Удаляем статус из localStorage
+            navigate('/login'); // Перенаправляем на страницу логина
+        } catch (error) {
+            console.error('Ошибка при выходе:', error);
+           // alert('Произошла ошибка при выходе. Попробуйте позже.');
+        }
     };
 
     const handleLogin = () => {

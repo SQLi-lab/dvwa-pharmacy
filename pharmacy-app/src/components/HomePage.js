@@ -4,6 +4,9 @@ import ProductCard from './ProductCard';
 import FilterPanel from './FilterPanel';
 import axios from 'axios';
 
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = 'http://localhost:5000'; // Базовый URL бэкенда
+
 function HomePage() {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);

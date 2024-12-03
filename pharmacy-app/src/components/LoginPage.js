@@ -21,7 +21,7 @@ function LoginPage({ setLoggedIn }) {
             });
 
             console.log(response.data.message); // Успешный вход
-            alert(response.data.message); // Показываем успешное сообщение
+            //alert(response.data.message); // Показываем успешное сообщение
             setLoggedIn(true); // Устанавливаем статус входа
             navigate('/'); // Возвращаемся на главную страницу
         } catch (error) {

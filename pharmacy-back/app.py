@@ -33,13 +33,20 @@ def login():
     if user:
         resp = make_response({"message": "Login successful"}, 200)
 
-        # Устанавливаем куки вручную с Partitioned
-        cookie_value = f"user={username}; Path=/; SameSite=None; Secure; Partitioned"
+        cookie_value = f"user={username}; Path=/; SameSite=Lax"
         resp.headers.add('Set-Cookie', cookie_value)
 
         return resp
     else:
         return jsonify({"message": "Invalid credentials"}), 401
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    response = make_response(jsonify({"message": "Вы успешно вышли из системы"}))
+    response.set_cookie('user', '', expires=0)  # Удаление куки
+    logger.info("User logged out and cookie cleared")
+    return response
+
 
 
 # Уязвимость 2: SQL-инъекция в фильтрах товаров
@@ -61,14 +68,15 @@ def get_products():
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    session = request.cookies.get('user')  # Ищем куку с правильным названием
-    if not session:
-        logger.warning("No user cookie found!")
+    # Получаем username из заголовка Authorization
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        logger.warning("No Authorization header found!")
         return jsonify({"message": "Unauthorized"}), 401
 
-    # Если в куке лежит сразу username (например, admin)
-    username = session
-    logger.info(f"Extracted username from cookie: {username}")
+    # Проверяем формат и извлекаем username
+    username = auth_header
+    logger.info(f"Extracted username from Authorization header: {username}")
 
     if request.method == 'GET':
         query = f"SELECT username, description FROM users WHERE username = '{username}'"
