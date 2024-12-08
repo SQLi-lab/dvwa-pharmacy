@@ -1,24 +1,13 @@
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
-import sqlite3
+from db import query_db, execute_db  # Подключаем универсальные функции
 import logging
+
 app = Flask(__name__)
-# Настройка CORS
 CORS(app, supports_credentials=True, origins="http://localhost:3000")
 
-logging.basicConfig(level=logging.INFO)  # Устанавливаем уровень логирования
-logger = logging.getLogger(__name__)  # Логгер для текущего приложения
-
-DATABASE = 'pharmacy.db'
-
-def query_db(query, args=(), one=False):
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute(query, args)
-    rv = cursor.fetchall()
-    conn.close()
-    return (rv[0] if rv else None) if one else rv
-
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -26,16 +15,13 @@ def login():
     username = data.get('username')
     password = data.get('password')
 
-    # Выполняем проверку пользователя в базе данных
-    query = "SELECT * FROM users WHERE username = ? AND password = ?"
-    user = query_db(query, (username, password), one=True)
+    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    user = query_db(query, one=True)
 
     if user:
         resp = make_response({"message": "Login successful"}, 200)
-
         cookie_value = f"user={username}; Path=/; SameSite=Lax"
         resp.headers.add('Set-Cookie', cookie_value)
-
         return resp
     else:
         return jsonify({"message": "Invalid credentials"}), 401
@@ -43,15 +29,11 @@ def login():
 @app.route('/logout', methods=['POST'])
 def logout():
     response = make_response(jsonify({"message": "Вы успешно вышли из системы"}))
-    response.set_cookie('user', '', expires=0)  # Удаление куки
+    response.set_cookie('user', '', expires=0)
     logger.info("User logged out and cookie cleared")
     return response
 
-
-
-# Уязвимость 2: SQL-инъекция в фильтрах товаров
 @app.route('/products', methods=['GET'])
-
 def get_products():
     category = request.args.get('category', '')
 
@@ -61,25 +43,24 @@ def get_products():
 
     products = query_db(query)
     return jsonify([
-        {"id": p[0], "name": p[1], "description": p[2], "price": p[3], "category": p[4]}
+        {"id": p['id'], "name": p['name'], "description": p['description'], "price": p['price'], "category": p['category']}
         for p in products
     ])
 
 @app.route('/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
-    query = "SELECT * FROM products WHERE id = ?"
-    product = query_db(query, (product_id,), one=True)
+    query = f"SELECT * FROM products WHERE id = {product_id}"
+    product = query_db(query, one=True)
     if product:
         return jsonify({
-            "id": product[0],
-            "name": product[1],
-            "description": product[2],
-            "price": product[3],
-            "category": product[4]
+            "id": product['id'],
+            "name": product['name'],
+            "description": product['description'],
+            "price": product['price'],
+            "category": product['category']
         })
     else:
         return jsonify({"message": "Product not found"}), 404
-
 
 @app.route('/orders', methods=['POST'])
 def orders():
@@ -87,7 +68,7 @@ def orders():
     if not auth_header or ' ' not in auth_header:
         return jsonify({"message": "Unauthorized"}), 401
 
-    username = auth_header.split(' ')[1]  # Получаем имя пользователя
+    username = auth_header.split(' ')[1]
     if not username:
         return jsonify({"message": "Invalid username"}), 400
 
@@ -96,23 +77,16 @@ def orders():
         return jsonify({"message": "Invalid data"}), 400
 
     orders = data['orders']
-
     try:
-        conn = sqlite3.connect('pharmacy.db')
-        cursor = conn.cursor()
-
-        # Добавляем все заказы
         for order in orders:
             if not order.get('name') or not order.get('price'):
                 return jsonify({"message": "Invalid order data"}), 400
 
-            query = "INSERT INTO orders (username, order_name, price) VALUES (?, ?, ?)"
-            cursor.execute(query, (username, order['name'], order['price']))
+            query = f"INSERT INTO orders (username, order_name, price) VALUES ('{username}', '{order['name']}', {order['price']})"
+            execute_db(query)
 
-        conn.commit()
-        conn.close()
         return jsonify({"message": "Orders placed successfully"}), 201
-    except sqlite3.Error as e:
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/reviews', methods=['GET', 'POST'])
@@ -121,38 +95,66 @@ def reviews():
     if request.method == 'GET':
         query = f"SELECT review_text FROM reviews WHERE username = '{username}'"
         reviews = query_db(query)
-        return jsonify(reviews)
+        return jsonify([{"text": r['review_text']} for r in reviews])
 
     elif request.method == 'POST':
         data = request.json
         review_text = data.get('review')
         query = f"INSERT INTO reviews (username, review_text) VALUES ('{username}', '{review_text}')"
         try:
-            conn = sqlite3.connect('pharmacy.db')
-            cursor = conn.cursor()
-            cursor.execute(query)
-            conn.commit()
+            execute_db(query)
             return jsonify({"message": "Review added successfully"}), 201
-        except sqlite3.Error as e:
+        except Exception as e:
             return jsonify({"error": str(e)}), 500
-        finally:
-            conn.close()
+
+@app.route('/products/<int:product_id>/reviews', methods=['POST'])
+def add_product_review(product_id):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    username = auth_header.split(" ")[1]
+    data = request.json
+    review_text = data.get('review')
+
+    if not review_text:
+        return jsonify({"error": "Review text is required"}), 400
+
+    # SQL-инъекция уязвимая запись отзыва
+    query = f"""
+        INSERT INTO reviews (product_id, username, review_text)
+        VALUES ({product_id}, '{username}', '{review_text}')
+    """
+
+    try:
+        execute_db(query)
+        return jsonify({"message": "Review added successfully"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/products/<int:product_id>/reviews', methods=['GET'])
+def product_reviews(product_id):
+    query = f"SELECT username, review_text FROM reviews WHERE product_id = {product_id}"
+    try:
+        reviews = query_db(query)
+        # Преобразуем строки в JSON-совместимый формат
+        reviews_list = [{"username": row["username"], "review_text": row["review_text"]} for row in reviews]
+        return jsonify(reviews_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    # Получаем username из заголовка Authorization
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith("Bearer "):
         return jsonify({"message": "Unauthorized"}), 401
 
-    username = auth_header.split(" ")[1]  # Извлекаем "user1" из "Bearer user1"
-
-    logger.info(f"Extracted username from Authorization header: {username}")
+    username = auth_header.split(" ")[1]
 
     if request.method == 'GET':
         query_user = f"SELECT username, description FROM users WHERE username = '{username}'"
-        logger.info(f"Executing query: {query_user}")
         user = query_db(query_user, one=True)
 
         query_orders = f"SELECT order_name, price FROM orders WHERE username = '{username}'"
@@ -163,53 +165,22 @@ def profile():
 
         if user:
             return jsonify({
-                "username": user[0],
-                "description": user[1],
-                "orders": [{"name": order[0], "price": order[1]} for order in orders],
-                "reviews": [{"text": review[0]} for review in reviews]
+                "username": user['username'],
+                "description": user['description'],
+                "orders": [{"name": order['order_name'], "price": order['price']} for order in orders],
+                "reviews": [{"text": review['review_text']} for review in reviews]
             })
         else:
-            logger.warning(f"User not found: {username}")
             return jsonify({"message": "User not found"}), 404
 
     elif request.method == 'POST':
         new_description = request.json.get('description', '')
         query_update = f"UPDATE users SET description = '{new_description}' WHERE username = '{username}'"
-        logger.info(f"Executing query: {query_update}")
         try:
-            conn = sqlite3.connect('pharmacy.db')
-            cursor = conn.cursor()
-            cursor.execute(query_update)
-            conn.commit()
-            logger.info(f"Description updated for user: {username}")
+            execute_db(query_update)
             return jsonify({"message": "Profile updated successfully"})
-        except sqlite3.Error as e:
-            logger.error(f"Database error: {e}")
+        except Exception as e:
             return jsonify({"message": f"Database error: {e}"}), 500
-        finally:
-            conn.close()
-
-
-
-@app.route('/profile', methods=['POST'])
-def update_profile():
-    # Получаем username из cookie
-    session = request.cookies.get('session')
-    if not session:
-        return jsonify({"message": "Unauthorized"}), 401
-
-    username = session.split('=')[1]
-    description = request.json.get('description')
-
-    # Обновляем описание пользователя
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET description = ? WHERE username = ?", (description, username))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"message": "Profile updated successfully"})
-
 
 if __name__ == '__main__':
     app.run(debug=True)
