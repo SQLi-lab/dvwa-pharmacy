@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import BACKEND_URL from './Constants';
+
 import {
     Container,
     TextField,
@@ -45,7 +47,7 @@ function ProfilePage() {
 
     // Загружаем профиль пользователя, заказы и отзывы
     useEffect(() => {
-        fetch('http://127.0.0.1:5000/profile', {
+        fetch(`${BACKEND_URL}/profile`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -93,7 +95,7 @@ function ProfilePage() {
             return;
         }
 
-        fetch('http://127.0.0.1:5000/profile', {
+        fetch(`${BACKEND_URL}/profile`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -6,12 +6,13 @@ import LoginPage from './components/LoginPage'; // Страница логина
 import ProfilePage from './components/ProfilePage'; // Личный кабинет
 import Cart from './components/Cart'; // Корзина
 import ProductDetail from './components/ProductDetail'; // Детальная страница товара
+import BACKEND_URL from './components/Constants';
 
 import './App.css';
 import axios from 'axios';
 
 axios.defaults.withCredentials = true; // Включить отправку куков
-axios.defaults.baseURL = 'http://localhost:5000'; // Базовый URL бэкенда
+axios.defaults.baseURL = `${BACKEND_URL}`; // Базовый URL бэкенда
 
 // Функция для извлечения куки по имени
 function getCookieByName(name) {
@@ -78,7 +79,7 @@ function App() {
             price: item.price,
         }));
 
-        fetch('http://127.0.0.1:5000/orders', {
+        fetch(`${BACKEND_URL}/orders`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

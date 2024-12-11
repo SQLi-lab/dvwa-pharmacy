@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BACKEND_URL from './Constants';
 import { useParams } from 'react-router-dom';
 import {
     Container,
@@ -33,13 +34,13 @@ function ProductDetail({ addToCart }) {
     // Загрузка данных о продукте и отзывах
     useEffect(() => {
         // Загружаем информацию о продукте
-        fetch(`http://127.0.0.1:5000/products/${id}`)
+        fetch(`${BACKEND_URL}/products/${id}`)
             .then((response) => response.json())
             .then((data) => setProduct(data))
             .catch((error) => console.error('Ошибка загрузки продукта:', error));
 
         // Загружаем отзывы для продукта
-        fetch(`http://127.0.0.1:5000/products/${id}/reviews`)
+        fetch(`${BACKEND_URL}/products/${id}/reviews`)
             .then((response) => response.json())
             .then((data) => {
                 if (Array.isArray(data)) {
@@ -66,7 +67,7 @@ function ProductDetail({ addToCart }) {
 
         const userCookie = getCookieByName('user');
 
-        fetch(`http://127.0.0.1:5000/products/${id}/reviews`, {
+        fetch(`${BACKEND_URL}/products/${id}/reviews`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

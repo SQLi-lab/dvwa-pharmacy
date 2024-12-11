@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, TextField, Button, Alert } from '@mui/material';
+import BACKEND_URL from './Constants';
+
 import axios from 'axios';
 
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = 'http://localhost:5000'; // Базовый URL бэкенда
+axios.defaults.baseURL = `${BACKEND_URL}`; // Базовый URL бэкенда
 
 function LoginPage({ setLoggedIn }) {
     const [username, setUsername] = useState('');
