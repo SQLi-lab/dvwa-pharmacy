@@ -1,15 +1,17 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, Blueprint, request, jsonify, make_response
 from flask_cors import CORS
 from db import query_db, execute_db  # Подключаем универсальные функции
 import logging
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
+CORS(app, supports_credentials=True, origins=["*"])
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.route('/login', methods=['POST'])
+api = Blueprint('api', __name__, url_prefix='/api')
+
+@api.route('/login', methods=['POST'])
 def login():
     data = request.json
     username = data.get('username')
@@ -22,18 +24,21 @@ def login():
         resp = make_response({"message": "Login successful"}, 200)
         cookie_value = f"user={username}; Path=/; SameSite=Lax"
         resp.headers.add('Set-Cookie', cookie_value)
+        resp.headers.add('Access-Control-Allow-Origin', '*')
         return resp
     else:
         return jsonify({"message": "Invalid credentials"}), 401
 
-@app.route('/logout', methods=['POST'])
+@api.route('/logout', methods=['POST'])
 def logout():
     response = make_response(jsonify({"message": "Вы успешно вышли из системы"}))
     response.set_cookie('user', '', expires=0)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
     logger.info("User logged out and cookie cleared")
     return response
 
-@app.route('/products', methods=['GET'])
+@api.route('/products', methods=['GET'])
 def get_products():
     category = request.args.get('category', '')
 
@@ -47,7 +52,7 @@ def get_products():
         for p in products
     ])
 
-@app.route('/products/<int:product_id>', methods=['GET'])
+@api.route('/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     query = f"SELECT * FROM products WHERE id = {product_id}"
     product = query_db(query, one=True)
@@ -62,7 +67,7 @@ def get_product(product_id):
     else:
         return jsonify({"message": "Product not found"}), 404
 
-@app.route('/orders', methods=['POST'])
+@api.route('/orders', methods=['POST'])
 def orders():
     auth_header = request.headers.get('Authorization')
     if not auth_header or ' ' not in auth_header:
@@ -89,7 +94,7 @@ def orders():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/reviews', methods=['GET', 'POST'])
+@api.route('/reviews', methods=['GET', 'POST'])
 def reviews():
     username = request.headers.get('Authorization').split(' ')[1]
     if request.method == 'GET':
@@ -107,7 +112,7 @@ def reviews():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-@app.route('/products/<int:product_id>/reviews', methods=['POST'])
+@api.route('/products/<int:product_id>/reviews', methods=['POST'])
 def add_product_review(product_id):
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -133,7 +138,7 @@ def add_product_review(product_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/products/<int:product_id>/reviews', methods=['GET'])
+@api.route('/products/<int:product_id>/reviews', methods=['GET'])
 def product_reviews(product_id):
     query = f"SELECT username, review_text FROM reviews WHERE product_id = {product_id}"
     try:
@@ -145,7 +150,7 @@ def product_reviews(product_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/profile', methods=['GET', 'POST'])
+@api.route('/profile', methods=['GET', 'POST'])
 def profile():
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -181,6 +186,9 @@ def profile():
             return jsonify({"message": "Profile updated successfully"})
         except Exception as e:
             return jsonify({"message": f"Database error: {e}"}), 500
+
+
+app.register_blueprint(api)
 
 if __name__ == '__main__':
     app.run(debug=True)
