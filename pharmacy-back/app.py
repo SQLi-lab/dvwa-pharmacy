@@ -32,7 +32,6 @@ def login():
 def logout():
     response = make_response(jsonify({"message": "Вы успешно вышли из системы"}))
     response.set_cookie('user', '', expires=0)
-    response.headers.add('Access-Control-Allow-Origin', '*')
 
     logger.info("User logged out and cookie cleared")
     return response
