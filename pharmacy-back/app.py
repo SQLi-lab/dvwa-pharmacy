@@ -1,3 +1,6 @@
+import os
+from urllib.parse import urlparse
+
 from flask import Flask, Blueprint, request, jsonify, make_response
 from flask_cors import CORS
 from db import query_db, execute_db  # Подключаем универсальные функции
@@ -9,7 +12,20 @@ CORS(app, supports_credentials=True, origins=["*"])
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-api = Blueprint('api', __name__, url_prefix='/api')
+
+def extract_path_from_url(env_var_name, default='/lab/frontend/api'):
+    full_url = os.getenv(env_var_name, default)
+    logger.info(f"Full url {full_url}")
+    if full_url == default:
+        logger.info("No REACT_APP_BACKEND_URL env found, using defaults")
+        return default
+    parsed_url = urlparse(full_url)
+    return parsed_url.path
+
+url_prefix = extract_path_from_url('REACT_APP_BACKEND_URL')
+
+# Создаем Blueprint
+api = Blueprint('api', __name__, url_prefix=url_prefix)
 
 @api.route('/login', methods=['POST'])
 def login():
