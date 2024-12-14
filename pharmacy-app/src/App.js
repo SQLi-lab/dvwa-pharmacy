@@ -129,7 +129,7 @@ function App() {
                             </Button>
                         </>
                     ) : (
-                        <Button color="inherit" component={Link} to="/login">
+                        <Button color="inherit" component={Link} to={`/login`}>
                             Войти
                         </Button>
                     )}

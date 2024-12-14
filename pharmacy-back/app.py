@@ -4,7 +4,7 @@ from db import query_db, execute_db  # Подключаем универсаль
 import logging
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=["*"])
+CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ def login():
         resp = make_response({"message": "Login successful"}, 200)
         cookie_value = f"user={username}; Path=/; SameSite=Lax"
         resp.headers.add('Set-Cookie', cookie_value)
-        resp.headers.add('Access-Control-Allow-Origin', '*')
         return resp
     else:
         return jsonify({"message": "Invalid credentials"}), 401
