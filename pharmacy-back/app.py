@@ -4,7 +4,7 @@ from db import query_db, execute_db  # Подключаем универсаль
 import logging
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
+CORS(app, supports_credentials=True, origins=["*"])
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
