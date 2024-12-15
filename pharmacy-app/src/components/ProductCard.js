@@ -2,10 +2,12 @@ import React from 'react';
 import { Card, CardContent, Typography, CardMedia, CardActionArea } from '@mui/material';
 import { Link } from 'react-router-dom';
 
+
+
 function ProductCard({ id, name, description, price, image }) {
     return (
         <Card style={{ maxWidth: 300, margin: '10px' }}>
-            <CardActionArea component={Link} to={`${process.env.PUBLIC_URL}/products/${id}`}>
+            <CardActionArea component={Link} to={'/products/${id}'}>
                 <CardMedia
                     component="img"
                     height="140"
