@@ -56,25 +56,25 @@ def logout():
 def get_products():
     category = request.args.get('category', '')
 
-    query = "SELECT * FROM products WHERE 1=1"
+    query = "SELECT * FROM medications WHERE 1=1"
     if category:
         query += f" AND category = '{category}'"
 
     products = query_db(query)
     return jsonify([
-        {"id": p['id'], "name": p['name'], "description": p['description'], "price": p['price'], "category": p['category']}
+        {"medication_id": p['medication_id'], "name": p['name'], "stock": p['stock'], "price": p['price'], "category": p['category']}
         for p in products
     ])
 
-@api.route('/products/<int:product_id>', methods=['GET'])
-def get_product(product_id):
-    query = f"SELECT * FROM products WHERE id = {product_id}"
+@api.route('/products/<int:medication_id>', methods=['GET'])
+def get_product(medication_id):
+    query = f"SELECT * FROM medications WHERE medication_id = {medication_id}"
     product = query_db(query, one=True)
     if product:
         return jsonify({
-            "id": product['id'],
+            "medication_id": product['medication_id'],
             "name": product['name'],
-            "description": product['description'],
+            "stock": product['stock'],
             "price": product['price'],
             "category": product['category']
         })

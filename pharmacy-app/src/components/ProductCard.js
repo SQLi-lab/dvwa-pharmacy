@@ -4,10 +4,10 @@ import { Link } from 'react-router-dom';
 
 
 
-function ProductCard({ id, name, description, price, image }) {
+function ProductCard({ medication_id, name, stock, price, image }) {
     return (
         <Card style={{ maxWidth: 300, margin: '10px' }}>
-            <CardActionArea component={Link} to={`/products/${id}`}>
+            <CardActionArea component={Link} to={`/products/${medication_id}`}>
                 <CardMedia
                     component="img"
                     height="140"
@@ -19,7 +19,7 @@ function ProductCard({ id, name, description, price, image }) {
                         {name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        {description}
+                        Количество: {stock}
                     </Typography>
                     <Typography variant="h6" color="text.primary">
                         {price} руб.

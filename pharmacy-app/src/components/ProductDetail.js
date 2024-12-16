@@ -25,7 +25,7 @@ function getCookieByName(name) {
 }
 
 function ProductDetail({ addToCart }) {
-    const { id } = useParams(); // Получаем ID продукта из маршрута
+    const { medication_id } = useParams(); // Получаем medication_id продукта из маршрута
     const [product, setProduct] = useState(null); // Данные продукта
     const [reviews, setReviews] = useState([]); // Отзывы
     const [newReview, setNewReview] = useState(''); // Новый отзыв
@@ -34,13 +34,13 @@ function ProductDetail({ addToCart }) {
     // Загрузка данных о продукте и отзывах
     useEffect(() => {
         // Загружаем информацию о продукте
-        fetch(`${BACKEND_URL}/products/${id}`)
+        fetch(`${BACKEND_URL}/products/${medication_id}`)
             .then((response) => response.json())
             .then((data) => setProduct(data))
             .catch((error) => console.error('Ошибка загрузки продукта:', error));
 
         // Загружаем отзывы для продукта
-        fetch(`${BACKEND_URL}/products/${id}/reviews`)
+        fetch(`${BACKEND_URL}/products/${medication_id}/reviews`)
             .then((response) => response.json())
             .then((data) => {
                 if (Array.isArray(data)) {
@@ -56,7 +56,7 @@ function ProductDetail({ addToCart }) {
         if (userCookie) {
             setUsername(userCookie);
         }
-    }, [id]);
+    }, [medication_id]);
 
     // Добавление нового отзыва
     const handleAddReview = () => {
@@ -67,7 +67,7 @@ function ProductDetail({ addToCart }) {
 
         const userCookie = getCookieByName('user');
 
-        fetch(`${BACKEND_URL}/products/${id}/reviews`, {
+        fetch(`${BACKEND_URL}/products/${medication_id}/reviews`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ function ProductDetail({ addToCart }) {
             {/* Карточка продукта */}
             <Paper style={{ padding: '20px', marginBottom: '20px' }}>
                 <Typography variant="h4">{product.name}</Typography>
-                <Typography>{product.description}</Typography>
+                <Typography>Количество: {product.stock}</Typography>
                 <Typography>Цена: {product.price} руб.</Typography>
                 <Typography>Категория: {product.category}</Typography>
                 <Button

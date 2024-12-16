@@ -150,9 +150,9 @@ function App() {
                         element={<Cart cart={cart} placeOrder={placeOrder} />}
                     />
                     <Route
-                        path="/products/:id"
+                        path="/products/:medication_id"
                         element={<ProductDetail addToCart={addToCart} />}
-                    /> {/* Детальная страница товара */}
+                    />
                 </Routes>
             </Container>
         </>

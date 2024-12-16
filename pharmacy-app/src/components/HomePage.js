@@ -45,11 +45,11 @@ function HomePage({ addToCart }) {
             <FilterPanel categories={categories} onFilter={handleFilter} />
             <Grid container spacing={2}>
                 {filteredProducts.map((product) => (
-                    <Grid item xs={12} sm={6} md={4} key={product.id}>
+                    <Grid item xs={12} sm={6} md={4} key={product.medication_id}>
                         <ProductCard
-                            id={product.id}
+                            medication_id={product.medication_id}
                             name={product.name}
-                            description={product.description}
+                            stock={product.stock}
                             price={product.price}
                             image={product.image}
                             onAddToCart={() => addToCart(product)}
