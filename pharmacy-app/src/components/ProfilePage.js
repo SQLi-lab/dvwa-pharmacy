@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BACKEND_URL from './Constants';
+import { useNavigate } from 'react-router-dom';
 
 import {
     Container,
@@ -27,6 +28,17 @@ function getCookieByName(name) {
 }
 
 function ProfilePage() {
+    const navigate = useNavigate();
+    useEffect(() => {
+        const isLoggedIn = localStorage.getItem('loggedIn') === 'true'; // Проверяем статус авторизации
+        const userCookie = document.cookie.split(';').find((cookie) => cookie.trim().startsWith('user='));
+
+        if (!isLoggedIn || !userCookie) {
+            navigate('/login'); // Редирект на страницу логина
+        }
+    }, [navigate]);
+
+
     const [userData, setUserData] = useState({
         username: '',
         name: '',

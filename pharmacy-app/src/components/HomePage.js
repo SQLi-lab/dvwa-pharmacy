@@ -4,6 +4,8 @@ import ProductCard from './ProductCard';
 import FilterPanel from './FilterPanel';
 import axios from 'axios';
 
+import images from './imagesLoader'; // Содержит массив путей к изображениям
+
 function HomePage({ addToCart }) {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -14,13 +16,20 @@ function HomePage({ addToCart }) {
         axios.get('/products')
             .then((response) => {
                 const data = response.data;
-                setProducts(data);
-                setFilteredProducts(data);
+
+                // Присваиваем каждому продукту случайное изображение
+                const productsWithImages = data.map((product, index) => ({
+                    ...product,
+                    image: images[index % images.length], // Циклично выбираем изображение
+                }));
+
+                setProducts(productsWithImages);
+                setFilteredProducts(productsWithImages);
 
                 // Уникальные категории
                 const uniqueCategories = [
                     'Все',
-                    ...new Set(data.map((product) => product.category || 'Другое')),
+                    ...new Set(productsWithImages.map((product) => product.category || 'Другое')),
                 ];
                 setCategories(uniqueCategories);
             })
