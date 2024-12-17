@@ -1,5 +1,6 @@
 import sqlite3
 import psycopg2
+import os
 from psycopg2.extras import RealDictCursor
 
 DATABASE_TYPE = 'sqlite'  # Измените на 'postgres', если используете PostgreSQL
@@ -8,13 +9,14 @@ DATABASE_CONFIG = {
         'database': 'pharmacy.db'
     },
     'postgres': {
-        'dbname': 'pharmacy', # dbname едина, там ток табла другая
-        'user': 'your_user',
-        'password': 'your_password',
-        'host': 'localhost',
-        'port': 5432
+        'dbname': os.getenv('POSTGRES_DB'),
+        'user': os.getenv('POSTGRES_USER'),
+        'password': os.getenv('POSTGRES_PASS'),
+        'host': os.getenv('POSTGRES_HOST'),
+        'port': os.getenv('POSTGRES_PORT')
     }
 }
+
 
 def get_connection():
     if DATABASE_TYPE == 'sqlite':
