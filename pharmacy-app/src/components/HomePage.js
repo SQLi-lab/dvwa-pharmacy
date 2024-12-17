@@ -1,36 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Grid, Container, Typography } from '@mui/material';
+import { Grid, Container, Typography, Box, Button } from '@mui/material';
 import ProductCard from './ProductCard';
-import FilterPanel from './FilterPanel';
 import axios from 'axios';
-
-import images from './imagesLoader'; // Содержит массив путей к изображениям
+import images from './imagesLoader';
 
 function HomePage({ addToCart }) {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [showAllCategories, setShowAllCategories] = useState(false);
 
     useEffect(() => {
-        // Загружаем список товаров
         axios.get('/products')
             .then((response) => {
                 const data = response.data;
 
-                // Присваиваем каждому продукту случайное изображение
                 const productsWithImages = data.map((product, index) => ({
                     ...product,
-                    image: images[index % images.length], // Циклично выбираем изображение
+                    image: images[index % images.length],
                 }));
 
                 setProducts(productsWithImages);
                 setFilteredProducts(productsWithImages);
 
-                // Уникальные категории
-                const uniqueCategories = [
-                    'Все',
-                    ...new Set(productsWithImages.map((product) => product.category || 'Другое')),
-                ];
+                const uniqueCategories = [...new Set(productsWithImages.map((product) => product.category || 'Другое'))];
                 setCategories(uniqueCategories);
             })
             .catch((error) => {
@@ -39,19 +33,69 @@ function HomePage({ addToCart }) {
     }, []);
 
     const handleFilter = (category) => {
-        if (category === 'Все') {
+        setSelectedCategory(category);
+        if (!category) {
             setFilteredProducts(products);
         } else {
             setFilteredProducts(products.filter((product) => product.category === category));
         }
     };
 
+    const visibleCategories = showAllCategories ? categories : categories.slice(0, 3);
+
     return (
         <Container style={{ marginTop: '20px' }}>
             <Typography variant="h4" gutterBottom>
                 Список товаров
             </Typography>
-            <FilterPanel categories={categories} onFilter={handleFilter} />
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    marginBottom: '20px',
+                    alignItems: 'flex-start' // Чтобы высокие кнопки не растягивали остальные по высоте
+                }}
+            >
+                <Button
+                    variant={selectedCategory ? "outlined" : "contained"}
+                    color="primary"
+                    onClick={() => handleFilter(null)}
+                    sx={{
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                    }}
+                >
+                    Без фильтра
+                </Button>
+
+                {visibleCategories.map((category, index) => (
+                    <Button
+                        key={index}
+                        variant={selectedCategory === category ? "contained" : "outlined"}
+                        color="primary"
+                        onClick={() => handleFilter(category)}
+                        sx={{
+                            whiteSpace: 'normal',
+                            wordBreak: 'break-word',
+                        }}
+                    >
+                        {category}
+                    </Button>
+                ))}
+            </Box>
+
+            {categories.length > 3 && (
+                <Button
+                    variant="outlined"
+                    style={{ marginBottom: '20px' }}
+                    onClick={() => setShowAllCategories((prev) => !prev)}
+                >
+                    {showAllCategories ? 'Скрыть категории' : 'Показать все категории'}
+                </Button>
+            )}
+
             <Grid container spacing={2}>
                 {filteredProducts.map((product) => (
                     <Grid item xs={12} sm={6} md={4} key={product.medication_id}>

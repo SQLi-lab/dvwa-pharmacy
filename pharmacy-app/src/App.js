@@ -73,6 +73,11 @@ function App() {
         setCart((prevCart) => [...prevCart, product]);
     };
 
+    const clearCart = () => {
+        setCart([]);
+        localStorage.setItem('cart', JSON.stringify([]));
+    };
+
     // Оформление заказа
     const placeOrder = () => {
         const userCookie = getCookieByName('user');
@@ -126,7 +131,7 @@ function App() {
                         style={{ flexGrow: 1, cursor: 'pointer' }}
                         onClick={() => navigate('/')}
                     >
-                        Pharmacy App
+                        Аптека нового поколения
                     </Typography>
                     {loggedIn ? (
                         <>
@@ -153,9 +158,10 @@ function App() {
                     <Route path="/" element={<HomePage addToCart={addToCart} />} />
                     <Route path="/login" element={<LoginPage setLoggedIn={handleLogin} />} />
                     <Route path="/profile" element={<ProfilePage orders={orders} />} />
-                    <Route path="/cart" element={<Cart cart={cart} placeOrder={placeOrder} />} />
+                    <Route path="/cart" element={<Cart cart={cart} placeOrder={placeOrder} clearCart={clearCart} />} />
                     <Route path="/products/:medication_id" element={<ProductDetail addToCart={addToCart} />} />
                 </Routes>
+
             </Container>
         </>
     );

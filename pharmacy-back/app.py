@@ -33,7 +33,7 @@ def login():
     username = data.get('username')
     password = data.get('password')
 
-    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    query = f"SELECT * FROM users WHERE login = '{username}' AND password = '{password}'"
     user = query_db(query, one=True)
 
     if user:
@@ -101,7 +101,7 @@ def orders():
             if not order.get('name') or not order.get('price'):
                 return jsonify({"message": "Invalid order data"}), 400
 
-            query = f"INSERT INTO orders (username, order_name, price) VALUES ('{username}', '{order['name']}', {order['price']})"
+            query = f"INSERT INTO orders (login, order_name, price) VALUES ('{username}', '{order['name']}', {order['price']})"
             execute_db(query)
 
         return jsonify({"message": "Orders placed successfully"}), 201
@@ -112,14 +112,14 @@ def orders():
 def reviews():
     username = request.headers.get('Authorization').split(' ')[1]
     if request.method == 'GET':
-        query = f"SELECT review_text FROM reviews WHERE username = '{username}'"
+        query = f"SELECT review_text FROM reviews WHERE login = '{username}'"
         reviews = query_db(query)
         return jsonify([{"text": r['review_text']} for r in reviews])
 
     elif request.method == 'POST':
         data = request.json
         review_text = data.get('review')
-        query = f"INSERT INTO reviews (username, review_text) VALUES ('{username}', '{review_text}')"
+        query = f"INSERT INTO reviews (login, review_text) VALUES ('{username}', '{review_text}')"
         try:
             execute_db(query)
             return jsonify({"message": "Review added successfully"}), 201
@@ -141,7 +141,7 @@ def add_product_review(product_id):
 
     # SQL-инъекция уязвимая запись отзыва
     query = f"""
-        INSERT INTO reviews (product_id, username, review_text)
+        INSERT INTO reviews (medication_id, login, review_text)
         VALUES ({product_id}, '{username}', '{review_text}')
     """
 
@@ -154,11 +154,11 @@ def add_product_review(product_id):
 
 @api.route('/products/<int:product_id>/reviews', methods=['GET'])
 def product_reviews(product_id):
-    query = f"SELECT username, review_text FROM reviews WHERE product_id = {product_id}"
+    query = f"SELECT login, review_text FROM reviews WHERE medication_id = {product_id}"
     try:
         reviews = query_db(query)
         # Преобразуем строки в JSON-совместимый формат
-        reviews_list = [{"username": row["username"], "review_text": row["review_text"]} for row in reviews]
+        reviews_list = [{"username": row["login"], "review_text": row["review_text"]} for row in reviews]
         return jsonify(reviews_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -173,24 +173,24 @@ def profile():
     username = auth_header.split(" ")[1]
 
     if request.method == 'GET':
-        query_user = f"SELECT username, description FROM users WHERE username = '{username}'"
+        query_user = f"SELECT login, description FROM users WHERE login = '{username}'"
         user = query_db(query_user, one=True)
 
-        query_orders = f"SELECT order_name, price FROM orders WHERE username = '{username}'"
+        query_orders = f"SELECT order_name, price FROM orders WHERE login = '{username}'"
         orders = query_db(query_orders)
 
         # Обновляем запрос к отзывам, чтобы получить product_name
         query_reviews = f"""
-            SELECT r.review_text, r.product_id, m.name AS product_name
+            SELECT r.review_text, r.medication_id, m.name AS product_name
             FROM reviews r
-            JOIN medications m ON r.product_id = m.medication_id
-            WHERE r.username = '{username}'
+            JOIN medications m ON r.medication_id = m.medication_id
+            WHERE r.login = '{username}'
         """
         reviews = query_db(query_reviews)
 
         if user:
             return jsonify({
-                "username": user['username'],
+                "username": user['login'],
                 "description": user['description'],
                 "orders": [{"name": order['order_name'], "price": order['price']} for order in orders],
                 "reviews": [
@@ -204,7 +204,7 @@ def profile():
 
     elif request.method == 'POST':
         new_description = request.json.get('description', '')
-        query_update = f"UPDATE users SET description = '{new_description}' WHERE username = '{username}'"
+        query_update = f"UPDATE users SET description = '{new_description}' WHERE login = '{username}'"
         try:
             execute_db(query_update)
             return jsonify({"message": "Profile updated successfully"})
