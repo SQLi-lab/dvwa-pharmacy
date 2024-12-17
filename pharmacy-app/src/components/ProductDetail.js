@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import BACKEND_URL from './Constants';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
     Container,
     Typography,
     Button,
     TextField,
     Paper,
-    List,
-    ListItem,
-    ListItemText,
+    Box
 } from '@mui/material';
 import images from './imagesLoader'; // Импортируем лоадер изображений
 
@@ -26,11 +24,23 @@ function getCookieByName(name) {
 }
 
 function ProductDetail({ addToCart }) {
-    const { medication_id } = useParams(); // Получаем medication_id продукта из маршрута
-    const [product, setProduct] = useState(null); // Данные продукта
-    const [reviews, setReviews] = useState([]); // Отзывы
-    const [newReview, setNewReview] = useState(''); // Новый отзыв
-    const [username, setUsername] = useState(''); // Имя пользователя
+    const { medication_id } = useParams();
+    const navigate = useNavigate();
+
+    const [product, setProduct] = useState(null);
+    const [reviews, setReviews] = useState([]);
+    const [newReview, setNewReview] = useState('');
+    const [username, setUsername] = useState('');
+
+    // Проверка авторизации
+    useEffect(() => {
+        const isLoggedIn = localStorage.getItem('loggedIn') === 'true';
+        const userCookie = document.cookie.split(';').find((cookie) => cookie.trim().startsWith('user='));
+
+        if (!isLoggedIn || !userCookie) {
+            navigate('/login');
+        }
+    }, [navigate]);
 
     // Загрузка данных о продукте и отзывах
     useEffect(() => {
@@ -38,10 +48,9 @@ function ProductDetail({ addToCart }) {
         fetch(`${BACKEND_URL}/products/${medication_id}`)
             .then((response) => response.json())
             .then((data) => {
-                // Присваиваем изображение из локального хранилища
                 const productWithImage = {
                     ...data,
-                    image: images[data.medication_id % images.length], // Циклично выбираем изображение
+                    image: images[data.medication_id % images.length],
                 };
                 setProduct(productWithImage);
             })
@@ -91,17 +100,16 @@ function ProductDetail({ addToCart }) {
             })
             .then(() => {
                 // Добавляем новый отзыв в список
-                setReviews((prev) => [...prev, { username: username || 'guest', text: newReview }]);
-                setNewReview(''); // Очищаем поле ввода
+                setReviews((prev) => [...prev, { username: username || 'guest', review_text: newReview }]);
+                setNewReview('');
             })
             .catch((error) => console.error('Ошибка добавления отзыва:', error));
     };
 
-    // Показываем сообщение "Загрузка...", если данные о продукте ещё не пришли
     if (!product) return <Typography>Загрузка...</Typography>;
 
     return (
-        <Container>
+        <Container style={{ marginTop: '20px', fontFamily: 'Arial, sans-serif' }}>
             {/* Карточка продукта */}
             <Paper style={{ padding: '20px', marginBottom: '20px', display: 'flex', gap: '20px' }}>
                 <img
@@ -115,9 +123,7 @@ function ProductDetail({ addToCart }) {
                     }}
                 />
                 <div>
-                    <Typography variant="h4" gutterBottom>
-                        {product.name}
-                    </Typography>
+                    <Typography variant="h4" gutterBottom>{product.name}</Typography>
                     <Typography variant="body1" style={{ marginBottom: '10px' }}>
                         Количество: {product.stock}
                     </Typography>
@@ -143,20 +149,27 @@ function ProductDetail({ addToCart }) {
                 <Typography variant="h5" gutterBottom>
                     Отзывы
                 </Typography>
-                <List>
-                    {reviews.length > 0 ? (
-                        reviews.map((review, index) => (
-                            <ListItem key={index}>
-                                <ListItemText
-                                    primary={review.review_text}
-                                    secondary={`Автор: ${review.username || 'guest'}`}
-                                />
-                            </ListItem>
-                        ))
-                    ) : (
-                        <Typography>Отзывов пока нет. Будьте первым!</Typography>
-                    )}
-                </List>
+                {reviews.length > 0 ? (
+                    <>
+                        {reviews.map((review, index) => (
+                            <Paper
+                                key={index}
+                                elevation={1}
+                                style={{
+                                    padding: '10px',
+                                    marginBottom: '10px',
+                                    border: '1px solid #ccc',
+                                    backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#fff'
+                                }}
+                            >
+                                <Typography >Автор: {review.username || 'guest'}</Typography>
+                                <Typography style={{ marginTop: '5px' }}>{review.review_text}</Typography>
+                            </Paper>
+                        ))}
+                    </>
+                ) : (
+                    <Typography>Отзывов пока нет. Будьте первым!</Typography>
+                )}
                 <TextField
                     label="Оставить отзыв"
                     variant="outlined"

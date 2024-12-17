@@ -11,10 +11,9 @@ import BACKEND_URL from './components/Constants';
 import './App.css';
 import axios from 'axios';
 
-axios.defaults.withCredentials = true; // Включить отправку куков
-axios.defaults.baseURL = `${BACKEND_URL}`; // Базовый URL бэкенда
+axios.defaults.withCredentials = true;
+axios.defaults.baseURL = `${BACKEND_URL}`;
 
-// Функция для извлечения куки по имени
 function getCookieByName(name) {
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
@@ -27,17 +26,31 @@ function getCookieByName(name) {
 }
 
 function App() {
-    const [loggedIn, setLoggedIn] = useState(false); // Статус авторизации
-    const [cart, setCart] = useState([]); // Корзина
-    const [orders, setOrders] = useState([]); // Заказы
+    const [loggedIn, setLoggedIn] = useState(false);
+    const [cart, setCart] = useState([]);
+    const [orders, setOrders] = useState([]);
     const navigate = useNavigate();
 
+    // Загружаем статус авторизации и корзину из localStorage при монтировании
     useEffect(() => {
         const isLoggedIn = localStorage.getItem('loggedIn');
         if (isLoggedIn === 'true') {
             setLoggedIn(true);
         }
+
+        const savedCart = localStorage.getItem('cart');
+        if (savedCart) {
+            setCart(JSON.parse(savedCart));
+        }
     }, []);
+
+    // Сохраняем корзину в localStorage при каждом её изменении
+    useEffect(() => {
+        if (cart.length > 0) {
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+    }, [cart]);
+
 
     const handleLogout = async () => {
         try {
@@ -94,7 +107,7 @@ function App() {
                 return response.json();
             })
             .then(() => {
-                setOrders((prevOrders) => [...prevOrders, ...cart]); // Добавляем оформленные заказы
+                setOrders((prevOrders) => [...prevOrders, ...cart]);
                 setCart([]); // Очищаем корзину
                 alert('Заказы успешно оформлены!');
             })
@@ -106,7 +119,6 @@ function App() {
 
     return (
         <>
-            {/* Верхняя панель */}
             <AppBar position="static">
                 <Toolbar>
                     <Typography
@@ -136,23 +148,13 @@ function App() {
                 </Toolbar>
             </AppBar>
 
-            {/* Роуты */}
             <Container style={{ marginTop: '20px' }}>
                 <Routes>
                     <Route path="/" element={<HomePage addToCart={addToCart} />} />
                     <Route path="/login" element={<LoginPage setLoggedIn={handleLogin} />} />
-                    <Route
-                        path="/profile"
-                        element={<ProfilePage orders={orders} />}
-                    />
-                    <Route
-                        path="/cart"
-                        element={<Cart cart={cart} placeOrder={placeOrder} />}
-                    />
-                    <Route
-                        path="/products/:medication_id"
-                        element={<ProductDetail addToCart={addToCart} />}
-                    />
+                    <Route path="/profile" element={<ProfilePage orders={orders} />} />
+                    <Route path="/cart" element={<Cart cart={cart} placeOrder={placeOrder} />} />
+                    <Route path="/products/:medication_id" element={<ProductDetail addToCart={addToCart} />} />
                 </Routes>
             </Container>
         </>
