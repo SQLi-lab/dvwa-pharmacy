@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BACKEND_URL from './Constants';
 import { useNavigate } from 'react-router-dom';
+import profileImage from './profile_pictures/profile.png';
 
 import {
     Container,
@@ -8,11 +9,10 @@ import {
     Button,
     Typography,
     Paper,
-    List,
-    ListItem,
-    ListItemText,
     Snackbar,
     Pagination,
+    Grid,
+    Box
 } from '@mui/material';
 
 // Функция для извлечения куки по имени
@@ -30,14 +30,13 @@ function getCookieByName(name) {
 function ProfilePage() {
     const navigate = useNavigate();
     useEffect(() => {
-        const isLoggedIn = localStorage.getItem('loggedIn') === 'true'; // Проверяем статус авторизации
+        const isLoggedIn = localStorage.getItem('loggedIn') === 'true';
         const userCookie = document.cookie.split(';').find((cookie) => cookie.trim().startsWith('user='));
 
         if (!isLoggedIn || !userCookie) {
-            navigate('/login'); // Редирект на страницу логина
+            navigate('/login');
         }
     }, [navigate]);
-
 
     const [userData, setUserData] = useState({
         username: '',
@@ -50,14 +49,16 @@ function ProfilePage() {
     });
     const [isEditing, setIsEditing] = useState(false);
     const [newDescription, setNewDescription] = useState('');
-    const [orders, setOrders] = useState([]); // Список заказов
-    const [reviews, setReviews] = useState([]); // Список отзывов
+    const [orders, setOrders] = useState([]);
+    const [reviews, setReviews] = useState([]);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
+
+    const [currentPage, setCurrentPage] = useState(1); // Пагинация для заказов
+    const [currentReviewsPage, setCurrentReviewsPage] = useState(1); // Пагинация для отзывов
+
     const itemsPerPage = 5;
 
-    // Загружаем профиль пользователя, заказы и отзывы
     useEffect(() => {
         fetch(`${BACKEND_URL}/profile`, {
             method: 'GET',
@@ -78,7 +79,7 @@ function ProfilePage() {
                     description: data.description || '',
                 });
                 setNewDescription(data.description || '');
-                setOrders(data.orders || []); // Убедимся, что заказы отображаются
+                setOrders(data.orders || []);
                 setReviews(data.reviews || []);
             })
             .catch((error) => {
@@ -103,7 +104,7 @@ function ProfilePage() {
         const userCookie = getCookieByName('user');
 
         if (!userCookie) {
-            console.error('Кука с именем "user" не найдена!');
+            console.error('Кука "user" не найдена!');
             return;
         }
 
@@ -131,8 +132,17 @@ function ProfilePage() {
         currentPage * itemsPerPage
     );
 
+    const paginatedReviews = reviews.slice(
+        (currentReviewsPage - 1) * itemsPerPage,
+        currentReviewsPage * itemsPerPage
+    );
+
     const handlePageChange = (event, value) => {
         setCurrentPage(value);
+    };
+
+    const handleReviewsPageChange = (event, value) => {
+        setCurrentReviewsPage(value);
     };
 
     return (
@@ -141,27 +151,34 @@ function ProfilePage() {
                 <Typography variant="h5" style={{ textAlign: 'center', marginBottom: '20px' }}>
                     {userData.username}
                 </Typography>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                    <img
-                        src="https://via.placeholder.com/150"
-                        alt="Аватар пользователя"
-                        style={{ borderRadius: '50%', marginRight: '20px', width: '150px', height: '150px' }}
-                    />
-                    <div>
-                        <Typography variant="h6">{userData.name}</Typography>
-                        <Typography>Паспорт: {userData.passport}</Typography>
-                        <Typography>Дата рождения: {userData.birthDate}</Typography>
-                        <Typography>Адрес: {userData.address}</Typography>
-                        <Typography>Телефон: {userData.phone}</Typography>
-                    </div>
-                </div>
 
-                <div style={{ marginTop: '20px' }}>
+                {/* Блок с информацией о пользователе */}
+                <Paper elevation={2} style={{ padding: '20px', marginBottom: '20px' }}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} md={3} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <img
+                                src={profileImage}
+                                alt="Аватар пользователя"
+                                style={{ borderRadius: '50%', width: '150px', height: '150px' }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={9}>
+                            <Typography variant="h6">{userData.name}</Typography>
+                            <Typography>Паспорт: {userData.passport}</Typography>
+                            <Typography>Дата рождения: {userData.birthDate}</Typography>
+                            <Typography>Адрес: {userData.address}</Typography>
+                            <Typography>Телефон: {userData.phone}</Typography>
+                        </Grid>
+                    </Grid>
+                </Paper>
+
+                {/* Блок "Описание" */}
+                <Paper elevation={2} style={{ padding: '20px', marginBottom: '20px' }}>
                     <Typography variant="h6" style={{ marginBottom: '10px' }}>
                         Описание:
                     </Typography>
                     {!isEditing ? (
-                        <div>
+                        <Box>
                             <Typography
                                 style={{
                                     padding: '10px',
@@ -183,9 +200,9 @@ function ProfilePage() {
                             >
                                 Редактировать
                             </Button>
-                        </div>
+                        </Box>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Box style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                             <TextField
                                 label="Редактировать описание"
                                 variant="outlined"
@@ -198,50 +215,93 @@ function ProfilePage() {
                             <Button variant="contained" color="primary" onClick={handleSave}>
                                 Сохранить
                             </Button>
-                        </div>
+                        </Box>
                     )}
-                </div>
+                </Paper>
 
-                <div style={{ marginTop: '20px' }}>
+                {/* Блок "Ваши заказы" */}
+                <Paper elevation={2} style={{ padding: '20px', marginBottom: '20px' }}>
                     <Typography variant="h6" style={{ marginBottom: '10px' }}>
                         Ваши заказы:
                     </Typography>
                     {paginatedOrders.length === 0 ? (
                         <Typography>У вас нет заказов</Typography>
                     ) : (
-                        <List>
+                        <>
                             {paginatedOrders.map((order, index) => (
-                                <ListItem key={index}>
-                                    <ListItemText primary={`${order.name} - ${order.price} руб.`} />
-                                </ListItem>
+                                <Paper
+                                    key={index}
+                                    elevation={1}
+                                    style={{ padding: '10px', marginBottom: '10px', border: '1px solid #ccc' }}
+                                >
+                                    <Grid container>
+                                        <Grid item xs={4}>
+                                            <Typography style={{ fontWeight: 'bold' }}>Название:</Typography>
+                                            <Typography>{order.name}</Typography>
+                                        </Grid>
+                                        <Grid item xs={4}>
+                                            <Typography style={{ fontWeight: 'bold' }}>Цена:</Typography>
+                                            <Typography>{order.price} руб.</Typography>
+                                        </Grid>
+                                        <Grid item xs={4}>
+                                            <Typography style={{ fontWeight: 'bold' }}>Доставка:</Typography>
+                                            <Typography>скоро</Typography>
+                                        </Grid>
+                                    </Grid>
+                                </Paper>
                             ))}
-                        </List>
+                            {orders.length > itemsPerPage && (
+                                <Pagination
+                                    count={Math.ceil(orders.length / itemsPerPage)}
+                                    page={currentPage}
+                                    onChange={handlePageChange}
+                                    style={{ marginTop: '10px' }}
+                                />
+                            )}
+                        </>
                     )}
-                    <Pagination
-                        count={Math.ceil(orders.length / itemsPerPage)}
-                        page={currentPage}
-                        onChange={handlePageChange}
-                        style={{ marginTop: '10px' }}
-                    />
-                </div>
+                </Paper>
 
-                <div style={{ marginTop: '20px' }}>
+                {/* Блок "Отзывы" */}
+                <Paper elevation={2} style={{ padding: '20px', marginBottom: '20px' }}>
                     <Typography variant="h6" style={{ marginBottom: '10px' }}>
                         Отзывы:
                     </Typography>
-                    {reviews.length === 0 ? (
+                    {paginatedReviews.length === 0 ? (
                         <Typography>Отзывов пока нет</Typography>
                     ) : (
-                        <List>
-                            {reviews.map((review, index) => (
-                                <ListItem key={index}>
-                                    <ListItemText primary={review.text} />
-                                </ListItem>
+                        <>
+                            {paginatedReviews.map((review, index) => (
+                                <Paper
+                                    key={index}
+                                    elevation={1}
+                                    style={{ padding: '10px', marginBottom: '10px', border: '1px solid #ccc' }}
+                                >
+                                    <Grid container>
+                                        <Grid item xs={8} style={{ borderRight: '1px solid #ccc', paddingRight: '10px' }}>
+                                            <Typography style={{ fontWeight: 'bold' }}>Текст отзыва:</Typography>
+                                            <Typography>{review.text}</Typography>
+                                        </Grid>
+                                        <Grid item xs={4} style={{ paddingLeft: '10px' }}>
+                                            <Typography style={{ fontWeight: 'bold' }}>Товар:</Typography>
+                                            <Typography>{review.productName}</Typography>
+                                        </Grid>
+                                    </Grid>
+                                </Paper>
                             ))}
-                        </List>
+                            {reviews.length > itemsPerPage && (
+                                <Pagination
+                                    count={Math.ceil(reviews.length / itemsPerPage)}
+                                    page={currentReviewsPage}
+                                    onChange={handleReviewsPageChange}
+                                    style={{ marginTop: '10px' }}
+                                />
+                            )}
+                        </>
                     )}
-                </div>
+                </Paper>
             </Paper>
+
             <Snackbar
                 open={snackbarOpen}
                 autoHideDuration={3000}

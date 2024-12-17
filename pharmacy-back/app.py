@@ -179,7 +179,13 @@ def profile():
         query_orders = f"SELECT order_name, price FROM orders WHERE username = '{username}'"
         orders = query_db(query_orders)
 
-        query_reviews = f"SELECT review_text FROM reviews WHERE username = '{username}'"
+        # Обновляем запрос к отзывам, чтобы получить product_name
+        query_reviews = f"""
+            SELECT r.review_text, r.product_id, m.name AS product_name
+            FROM reviews r
+            JOIN medications m ON r.product_id = m.medication_id
+            WHERE r.username = '{username}'
+        """
         reviews = query_db(query_reviews)
 
         if user:
@@ -187,10 +193,14 @@ def profile():
                 "username": user['username'],
                 "description": user['description'],
                 "orders": [{"name": order['order_name'], "price": order['price']} for order in orders],
-                "reviews": [{"text": review['review_text']} for review in reviews]
+                "reviews": [
+                    {"text": review['review_text'], "productName": review['product_name']}
+                    for review in reviews
+                ]
             })
         else:
             return jsonify({"message": "User not found"}), 404
+
 
     elif request.method == 'POST':
         new_description = request.json.get('description', '')
