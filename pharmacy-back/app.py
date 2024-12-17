@@ -42,7 +42,7 @@ def login():
         resp.headers.add('Set-Cookie', cookie_value)
         return resp
     else:
-        return jsonify({"message": "Invalid credentials"}), 401
+        return jsonify({"message": "Неверные данные"}), 401
 
 @api.route('/logout', methods=['POST'])
 def logout():
@@ -89,17 +89,17 @@ def orders():
 
     username = auth_header.split(' ')[1]
     if not username:
-        return jsonify({"message": "Invalid username"}), 400
+        return jsonify({"message": "Неверные данные"}), 400
 
     data = request.json
     if not data or 'orders' not in data:
-        return jsonify({"message": "Invalid data"}), 400
+        return jsonify({"message": "Неверные данные"}), 400
 
     orders = data['orders']
     try:
         for order in orders:
             if not order.get('name') or not order.get('price'):
-                return jsonify({"message": "Invalid order data"}), 400
+                return jsonify({"message": "Неверные данные заказа"}), 400
 
             query = f"INSERT INTO orders (login, order_name, price) VALUES ('{username}', '{order['name']}', {order['price']})"
             execute_db(query)
