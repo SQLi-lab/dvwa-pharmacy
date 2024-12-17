@@ -4,18 +4,22 @@ import os
 from psycopg2.extras import RealDictCursor
 
 DATABASE_TYPE = 'postgres'  # Измените на 'postgres', если используете PostgreSQL
+
+db_name = str(os.getenv('POSTGRES_DB')).replace("-", "_")
+
 DATABASE_CONFIG = {
     'sqlite': {
         'database': 'pharmacy.db'
     },
     'postgres': {
-        'dbname': os.getenv('POSTGRES_DB'),
+        'dbname': db_name,
         'user': os.getenv('POSTGRES_USER'),
         'password': os.getenv('POSTGRES_PASS'),
         'host': os.getenv('POSTGRES_HOST'),
         'port': os.getenv('POSTGRES_PORT')
     }
 }
+
 
 
 def get_connection():
@@ -35,13 +39,20 @@ def query_db(query, args=(), one=False):
     conn = get_connection()
     if DATABASE_TYPE == 'sqlite':
         conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+        cursor = conn.cursor()
+    else:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)  # Используем RealDictCursor для Postgres
     cursor.execute(query, args)
     rv = cursor.fetchall()
     conn.close()
-    if DATABASE_TYPE == 'postgres':
-        return [dict(row) for row in rv] if not one else dict(rv[0]) if rv else None
-    return (rv[0] if rv else None) if one else rv
+
+    if DATABASE_TYPE == 'sqlite':
+        data = [dict(row) for row in rv]
+    else:
+        data = rv
+
+    return (data[0] if data else None) if one else data
+
 
 def execute_db(query, args=()):
     conn = get_connection()
