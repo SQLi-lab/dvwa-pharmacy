@@ -3,7 +3,7 @@ import psycopg2
 import os
 from psycopg2.extras import RealDictCursor
 
-DATABASE_TYPE = 'sqlite'  # Измените на 'postgres', если используете PostgreSQL
+DATABASE_TYPE = 'postgres'  # Измените на 'postgres', если используете PostgreSQL
 DATABASE_CONFIG = {
     'sqlite': {
         'database': 'pharmacy.db'
