@@ -37,12 +37,13 @@ def login():
     user = query_db(query, one=True)
 
     if user:
-        resp = make_response({"message": "Login successful"}, 200)
+        resp = make_response({"message": f"Login successful: user={user}"}, 200)
         cookie_value = f"user={username}; Path=/; SameSite=Lax"
         resp.headers.add('Set-Cookie', cookie_value)
         return resp
     else:
-        return jsonify({"message": "Неверные данные"}), 401
+        return jsonify({"message": "Invalid credentials"}), 401
+
 
 @api.route('/logout', methods=['POST'])
 def logout():
@@ -51,6 +52,7 @@ def logout():
 
     logger.info("User logged out and cookie cleared")
     return response
+
 
 @api.route('/products', methods=['GET'])
 def get_products():
@@ -61,10 +63,10 @@ def get_products():
         query += f" AND category = '{category}'"
 
     products = query_db(query)
-    return jsonify([
-        {"medication_id": p['medication_id'], "name": p['name'], "stock": p['stock'], "price": p['price'], "category": p['category']}
-        for p in products
-    ])
+    result = [dict(row) for row in products]
+
+    return jsonify(result)
+
 
 @api.route('/products/<int:medication_id>', methods=['GET'])
 def get_product(medication_id):

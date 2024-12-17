@@ -32,14 +32,26 @@ function HomePage({ addToCart }) {
             });
     }, []);
 
+
     const handleFilter = (category) => {
         setSelectedCategory(category);
-        if (!category) {
-            setFilteredProducts(products);
-        } else {
-            setFilteredProducts(products.filter((product) => product.category === category));
-        }
+
+        const url = category ? `/products?category=${encodeURIComponent(category)}` : '/products';
+
+        axios.get(url)
+            .then((response) => {
+                const data = response.data;
+                const productsWithImages = data.map((product, index) => ({
+                    ...product,
+                    image: images[index % images.length],
+                }));
+                setFilteredProducts(productsWithImages);
+            })
+            .catch((error) => {
+                console.error('Ошибка загрузки товаров с фильтром категории:', error);
+            });
     };
+
 
     const visibleCategories = showAllCategories ? categories : categories.slice(0, 3);
 
